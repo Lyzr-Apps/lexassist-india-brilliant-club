@@ -1,8 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Enable standalone output for optimized Docker deployments
-  output: 'standalone',
-
   // Optimize for faster builds
   swcMinify: true,
 

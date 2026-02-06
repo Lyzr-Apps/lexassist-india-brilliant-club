@@ -2,7 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import parseLLMJson from '@/lib/jsonParser'
 
 const LYZR_API_URL = 'https://agent-prod.studio.lyzr.ai/v3/inference/chat/'
-const LYZR_API_KEY = process.env.LYZR_API_KEY || ''
+const LYZR_API_KEY = process.env.LYZR_API_KEY || process.env.NEXT_PUBLIC_LYZR_API_KEY || ''
+
+// Log configuration status (for debugging)
+if (!LYZR_API_KEY) {
+  console.error('[API Agent] LYZR_API_KEY is not configured')
+} else {
+  console.log('[API Agent] LYZR_API_KEY is configured:', LYZR_API_KEY.substring(0, 10) + '...')
+}
 
 // Types
 interface NormalizedAgentResponse {
@@ -95,6 +102,16 @@ function normalizeResponse(parsed: any): NormalizedAgentResponse {
     message: undefined,
     metadata: undefined,
   }
+}
+
+// GET handler for health check
+export async function GET() {
+  return NextResponse.json({
+    status: 'ok',
+    message: 'LexAssist AI Agent API is running',
+    timestamp: new Date().toISOString(),
+    hasApiKey: !!LYZR_API_KEY,
+  })
 }
 
 export async function POST(request: NextRequest) {
