@@ -73,9 +73,9 @@
     @apply bg-background text-foreground;
   }
   .font-serif {
-    font-family: var(--font-merriweather), ui-serif, Georgia, serif;
+    font-family: var(--font-merriweather, Georgia, 'Times New Roman', serif);
   }
   .font-sans {
-    font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif);
   }
 }
