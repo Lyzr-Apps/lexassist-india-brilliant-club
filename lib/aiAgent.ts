@@ -63,7 +63,109 @@ export interface UploadResponse {
 }
 
 /**
- * Call the AI Agent via server-side API route
+ * Generate a simple UUID
+ */
+function generateUUID(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    const r = (Math.random() * 16) | 0
+    const v = c === 'x' ? r : (r & 0x3) | 0x8
+    return v.toString(16)
+  })
+}
+
+/**
+ * Call the AI Agent directly (fallback when server API fails)
+ */
+async function callAIAgentDirect(
+  message: string,
+  agent_id: string,
+  options?: { user_id?: string; session_id?: string; assets?: string[] }
+): Promise<AIAgentResponse> {
+  try {
+    const LYZR_API_URL = 'https://agent-prod.studio.lyzr.ai/v3/inference/chat/'
+    const LYZR_API_KEY = 'sk-default-XCw5s61QhnvHnRPI1w2pnlKOzYriJ6UU'
+
+    const finalUserId = options?.user_id || `user-${generateUUID()}`
+    const finalSessionId = options?.session_id || `${agent_id}-${generateUUID().substring(0, 12)}`
+
+    const payload: Record<string, any> = {
+      message,
+      agent_id,
+      user_id: finalUserId,
+      session_id: finalSessionId,
+    }
+
+    if (options?.assets && options.assets.length > 0) {
+      payload.assets = options.assets
+    }
+
+    const response = await fetch(LYZR_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': LYZR_API_KEY,
+      },
+      body: JSON.stringify(payload),
+    })
+
+    const rawText = await response.text()
+
+    if (response.ok) {
+      let parsed: any
+      try {
+        // Try to parse as JSON first
+        parsed = JSON.parse(rawText)
+      } catch {
+        // If that fails, try to extract JSON from markdown code blocks
+        const jsonMatch = rawText.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/)
+        if (jsonMatch) {
+          try {
+            parsed = JSON.parse(jsonMatch[1].trim())
+          } catch {
+            parsed = { text: rawText }
+          }
+        } else {
+          parsed = { text: rawText }
+        }
+      }
+
+      return {
+        success: true,
+        response: {
+          status: 'success',
+          result: parsed,
+        },
+        agent_id,
+        user_id: finalUserId,
+        session_id: finalSessionId,
+        timestamp: new Date().toISOString(),
+      }
+    } else {
+      return {
+        success: false,
+        response: {
+          status: 'error',
+          result: {},
+          message: `API returned status ${response.status}`,
+        },
+        error: `API returned status ${response.status}`,
+      }
+    }
+  } catch (error) {
+    return {
+      success: false,
+      response: {
+        status: 'error',
+        result: {},
+        message: error instanceof Error ? error.message : 'Network error',
+      },
+      error: error instanceof Error ? error.message : 'Network error',
+    }
+  }
+}
+
+/**
+ * Call the AI Agent via server-side API route (with fallback to direct call)
  */
 export async function callAIAgent(
   message: string,
@@ -85,18 +187,18 @@ export async function callAIAgent(
       }),
     })
 
+    // If we get a 404, the API route doesn't exist - use direct call
+    if (response.status === 404) {
+      console.warn('[aiAgent] Server API not found (404), falling back to direct API call')
+      return callAIAgentDirect(message, agent_id, options)
+    }
+
     const data = await response.json()
     return data
   } catch (error) {
-    return {
-      success: false,
-      response: {
-        status: 'error',
-        result: {},
-        message: error instanceof Error ? error.message : 'Network error',
-      },
-      error: error instanceof Error ? error.message : 'Network error',
-    }
+    // If server API fails completely, fall back to direct call
+    console.warn('[aiAgent] Server API failed, falling back to direct API call:', error)
+    return callAIAgentDirect(message, agent_id, options)
   }
 }
 
