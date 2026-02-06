@@ -74,40 +74,13 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  // Load user preference from localStorage
+  // Load preferences from localStorage (but NOT user type - always show welcome screen)
   useEffect(() => {
-    const savedUserType = localStorage.getItem('lexassist_user_type') as UserType
     const savedDarkMode = localStorage.getItem('lexassist_dark_mode') === 'true'
-    const savedConversations = localStorage.getItem('lexassist_conversations')
-
-    if (savedUserType) {
-      setUserType(savedUserType)
-      setScreen('chat')
-    }
     setDarkMode(savedDarkMode)
-    if (savedConversations) {
-      try {
-        const parsed = JSON.parse(savedConversations)
-        setConversations(parsed.map((c: any) => ({
-          ...c,
-          createdAt: new Date(c.createdAt),
-          messages: c.messages.map((m: any) => ({
-            ...m,
-            timestamp: new Date(m.timestamp)
-          }))
-        })))
-      } catch (e) {
-        console.error('Failed to parse conversations', e)
-      }
-    }
   }, [])
 
-  // Save conversations to localStorage
-  useEffect(() => {
-    if (conversations.length > 0) {
-      localStorage.setItem('lexassist_conversations', JSON.stringify(conversations))
-    }
-  }, [conversations])
+  // Conversations are session-only (not persisted to localStorage)
 
   // Auto scroll to bottom
   useEffect(() => {
@@ -118,7 +91,6 @@ export default function Home() {
 
   const handleContinue = () => {
     if (userType) {
-      localStorage.setItem('lexassist_user_type', userType)
       setScreen('chat')
       // Create first conversation
       const newConv: Conversation = {
