@@ -72,4 +72,10 @@
   body {
     @apply bg-background text-foreground;
   }
+  .font-serif {
+    font-family: var(--font-merriweather), ui-serif, Georgia, serif;
+  }
+  .font-sans {
+    font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  }
 }

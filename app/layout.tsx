@@ -1,13 +1,18 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Inter, Merriweather } from 'next/font/google'
 import './globals.css'
 import { IframeLoggerInit } from '@/components/IframeLoggerInit'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
+const merriweather = Merriweather({
+  subsets: ['latin'],
+  weight: ['300', '400', '700', '900'],
+  variable: '--font-merriweather'
+})
 
 export const metadata: Metadata = {
-  title: 'Next.js App',
-  description: 'Built with Next.js, React, and Tailwind CSS',
+  title: 'LexAssist AI - Legal Research Assistant',
+  description: 'Comprehensive legal research assistant for Indian Criminal Law and Corporate Law',
 }
 
 export default function RootLayout({
@@ -17,7 +22,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={`${inter.variable} ${merriweather.variable} font-sans`}>
         <IframeLoggerInit />
         {children}
       </body>
