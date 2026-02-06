@@ -153,20 +153,26 @@ export default function Home() {
 
     try {
       // Call AI Agent
+      console.log('[Page] Calling AI agent with message:', messageText)
       const result = await callAIAgent(messageText, AGENT_ID, {
         user_id: userType || undefined
       })
 
+      console.log('[Page] AI agent result:', result)
+
       if (result.success && result.response.status === 'success') {
+        console.log('[Page] Response result:', result.response.result)
         const legalResponse = result.response.result as LegalResponse
 
         const assistantMessage: Message = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: legalResponse.summary || 'Response received',
+          content: legalResponse.summary || legalResponse.detailed_analysis || JSON.stringify(legalResponse) || 'Response received',
           legalResponse,
           timestamp: new Date()
         }
+
+        console.log('[Page] Adding assistant message:', assistantMessage)
 
         setConversations(prev => prev.map(c =>
           c.id === currentConversationId
@@ -174,10 +180,14 @@ export default function Home() {
             : c
         ))
       } else {
-        setError(result.error || 'Failed to get response from LexAssist')
+        const errorMsg = result.error || 'Failed to get response from LexAssist'
+        console.error('[Page] Error from agent:', errorMsg, result)
+        setError(errorMsg)
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      const errorMsg = err instanceof Error ? err.message : 'An error occurred'
+      console.error('[Page] Exception during agent call:', err)
+      setError(errorMsg)
     } finally {
       setLoading(false)
     }

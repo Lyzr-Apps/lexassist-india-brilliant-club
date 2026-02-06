@@ -109,26 +109,33 @@ async function callAIAgentDirect(
     })
 
     const rawText = await response.text()
+    console.log('[callAIAgentDirect] Raw response:', rawText.substring(0, 200))
 
     if (response.ok) {
       let parsed: any
       try {
         // Try to parse as JSON first
         parsed = JSON.parse(rawText)
+        console.log('[callAIAgentDirect] Parsed JSON successfully')
       } catch {
+        console.log('[callAIAgentDirect] Failed to parse as JSON, trying markdown extraction')
         // If that fails, try to extract JSON from markdown code blocks
         const jsonMatch = rawText.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/)
         if (jsonMatch) {
           try {
             parsed = JSON.parse(jsonMatch[1].trim())
+            console.log('[callAIAgentDirect] Extracted JSON from markdown')
           } catch {
+            console.log('[callAIAgentDirect] Failed to parse extracted JSON, using raw text')
             parsed = { text: rawText }
           }
         } else {
+          console.log('[callAIAgentDirect] No JSON found, using raw text')
           parsed = { text: rawText }
         }
       }
 
+      console.log('[callAIAgentDirect] Final parsed result:', parsed)
       return {
         success: true,
         response: {
@@ -172,7 +179,10 @@ export async function callAIAgent(
   agent_id: string,
   options?: { user_id?: string; session_id?: string; assets?: string[] }
 ): Promise<AIAgentResponse> {
+  console.log('[callAIAgent] Starting request:', { message: message.substring(0, 50), agent_id })
+
   try {
+    console.log('[callAIAgent] Attempting server API route /api/agent')
     const response = await fetch('/api/agent', {
       method: 'POST',
       headers: {
@@ -187,6 +197,8 @@ export async function callAIAgent(
       }),
     })
 
+    console.log('[callAIAgent] Server API response status:', response.status)
+
     // If we get a 404, the API route doesn't exist - use direct call
     if (response.status === 404) {
       console.warn('[aiAgent] Server API not found (404), falling back to direct API call')
@@ -194,6 +206,7 @@ export async function callAIAgent(
     }
 
     const data = await response.json()
+    console.log('[callAIAgent] Server API response data:', data)
     return data
   } catch (error) {
     // If server API fails completely, fall back to direct call
